@@ -15,8 +15,9 @@ public class WaylandGameCapture : IGameCapture
     private static readonly string FramePath  = "/dev/shm/bettergi/frame.bin";
     private static readonly string FrameTmpPath  = "/dev/shm/bettergi/frame.bin.tmp";
     private static readonly string PidPath    = "/dev/shm/bettergi/daemon.pid";
-    private static readonly string IsExitPath    = "/dev/shm/bettergi/daemon.exit";
     private static readonly string ScriptPath = "/dev/shm/bettergi/screencast_daemon.py";
+
+    private int _daemonPid = 0;
 
     /// <summary>
     /// 启动截图守护进程，并等待共享内存帧文件就绪
@@ -47,10 +48,26 @@ public class WaylandGameCapture : IGameCapture
             CreateNoWindow         = true
         });
 
+        // 等待 Pid 文件出现，最长等待 10 秒（200 * 50ms）
+        for (int i = 0; i < 200; i++)
+        {
+            if (File.Exists(PidPath))
+            {
+                try
+                {
+                    string pidStr = File.ReadAllText(PidPath).Trim();
+                    _daemonPid = int.Parse(pidStr);
+                    if (_daemonPid != 0) break;
+                }
+                catch { }
+            }
+            Thread.Sleep(50);
+        }
+
         // 等待共享内存帧文件出现，最长等待 30 秒（600 * 50ms），或者守护进程退出
         for (int i = 0; i < 600; i++)
         {
-            if (File.Exists(IsExitPath))
+            if (!IsDaemonAlive())
             {
                 return;
             }
@@ -72,7 +89,7 @@ public class WaylandGameCapture : IGameCapture
     public Mat? Capture()
     {
         if (!IsCapturing) return null;
-        if (File.Exists(IsExitPath))
+        if (!IsDaemonAlive())
         {
             IsCapturing = false;
             return null;
@@ -122,15 +139,21 @@ public class WaylandGameCapture : IGameCapture
         KillDaemon();
     }
 
+    private bool IsDaemonAlive()
+    {
+        if (_daemonPid == 0) return false;
+        string procPath = $"/proc/{_daemonPid}";
+        return Directory.Exists(procPath);
+    }
+
     private void KillDaemon()
     {
         IsCapturing = false;
 
-        string? pidStr = null;
-        try { pidStr = File.ReadAllText(PidPath).Trim(); } catch { }
-
-        if (!string.IsNullOrEmpty(pidStr))
+        if (_daemonPid != 0)
         {
+            string pidStr = _daemonPid.ToString();
+
             try
             {
                 Process.Start(new ProcessStartInfo
@@ -162,6 +185,7 @@ public class WaylandGameCapture : IGameCapture
         try { File.Delete(FramePath); } catch { }
         try { File.Delete(FrameTmpPath); } catch { }
         try { File.Delete(ScriptPath); } catch { }
-        try { File.Delete(IsExitPath); } catch { }
+
+        _daemonPid = 0;
     }
 }

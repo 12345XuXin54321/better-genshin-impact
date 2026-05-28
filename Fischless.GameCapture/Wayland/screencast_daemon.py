@@ -17,10 +17,8 @@ SHM_DIR   = Path("/dev/shm/bettergi")
 FRAME_BIN = SHM_DIR / "frame.bin"
 FRAME_TMP = SHM_DIR / "frame.bin.tmp"
 PID_FILE  = SHM_DIR / "daemon.pid"
-EXIT_FILE  = SHM_DIR / "daemon.exit"
 
 def cleanup():
-    EXIT_FILE.write_text("")
     if pipeline is not None:
         pipeline.set_state(Gst.State.NULL)
     print("python 守护进程退出", file=sys.stderr)
