@@ -49,6 +49,7 @@ pipeline = None
 pending = {}
 session = None # ScreenCast 会话对象
 
+SHM_DIR.mkdir(parents=True, exist_ok=True)
 PID_FILE.write_text(str(os.getpid()))
 
 def on_response(response, results, path=None):
@@ -62,6 +63,8 @@ def on_response(response, results, path=None):
 
 def on_closed(*args, path=None):
     """当用户在系统层面撤销共享权限时触发"""
+    if session is None or path != session:
+        return
     die("Portal 会话被系统或用户关闭")
 
 bus = dbus.SessionBus()

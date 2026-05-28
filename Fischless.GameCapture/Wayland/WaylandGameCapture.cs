@@ -31,22 +31,47 @@ public class WaylandGameCapture : IGameCapture
 
         var name = typeof(WaylandGameCapture).Assembly.GetManifestResourceNames()
             .FirstOrDefault(n => n.EndsWith("screencast_daemon.py"));
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            Console.Error.WriteLine("[Wayland] 未找到嵌入的 screencast_daemon.py");
+            return;
+        }
 
         using var stream = typeof(WaylandGameCapture).Assembly.GetManifestResourceStream(name);
-        if (stream != null)
+        if (stream is null)
+        {
+            Console.Error.WriteLine("[Wayland] 无法打开嵌入的脚本");
+            return;
+        }
+
+        try
         {
             Directory.CreateDirectory("/dev/shm/bettergi");
             using var fs = new FileStream(ScriptPath, FileMode.Create);
             stream.CopyTo(fs);
         }
-
-        Process.Start(new ProcessStartInfo
+        catch (Exception ex)
         {
-            FileName               = "/usr/bin/python3",
-            Arguments              = $"\"{ScriptPath}\"",
-            UseShellExecute        = false,
-            CreateNoWindow         = true
-        });
+            Console.Error.WriteLine($"[Wayland] 把脚本复制到 /dev/shm/bettergi 时出错: {ex.GetType().Name}: {ex.Message}");
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName               = "/usr/bin/python3",
+                Arguments              = $"\"{ScriptPath}\"",
+                UseShellExecute        = false,
+                CreateNoWindow         = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[Wayland] 启动守护进程出错: {ex.Message}");
+            KillDaemon();
+            return;
+        }
 
         // 等待 Pid 文件出现，最长等待 10 秒（200 * 50ms）
         for (int i = 0; i < 200; i++)
