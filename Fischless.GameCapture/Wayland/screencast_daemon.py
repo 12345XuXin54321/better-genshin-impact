@@ -63,7 +63,7 @@ def on_response(response, results, path=None):
     if cb is not None:
         cb(response, dict(results))
 
-def on_session_closed(*args, path=None):
+def on_closed(*args, path=None):
     """当用户在系统层面撤销共享权限时触发"""
     die("Portal 会话被系统或用户关闭")
 
@@ -75,10 +75,9 @@ bus.add_signal_receiver(
     path_keyword="path",
 )
 bus.add_signal_receiver(
-    on_session_closed,
+    on_closed,
     signal_name="Closed",
     dbus_interface="org.freedesktop.portal.Session",
-    path=session,
     path_keyword="path"
 )
 
