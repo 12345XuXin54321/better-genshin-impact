@@ -18,6 +18,11 @@ FRAME_BIN = SHM_DIR / "frame.bin"
 FRAME_TMP = SHM_DIR / "frame.bin.tmp"
 PID_FILE  = SHM_DIR / "daemon.pid"
 
+pipeline = None
+# 请求路径 -> 回调 映射表，用于将 portal 的异步响应关联到对应的请求
+pending = {}
+session = None # ScreenCast 会话对象
+
 def cleanup():
     if pipeline is not None:
         pipeline.set_state(Gst.State.NULL)
@@ -43,11 +48,6 @@ try:
     Gst.init(None)
 except Exception as e:
     die(f"请检查依赖项是否安装 {e}")
-
-pipeline = None
-# 请求路径 -> 回调 映射表，用于将 portal 的异步响应关联到对应的请求
-pending = {}
-session = None # ScreenCast 会话对象
 
 SHM_DIR.mkdir(parents=True, exist_ok=True)
 PID_FILE.write_text(str(os.getpid()))
@@ -94,7 +94,7 @@ def start_pipeline(node_id):
     pipe = Gst.parse_launch(
         f"pipewiresrc path={node_id} "
         f"! videoconvert "
-        f"! video/x-raw,format=BGR " 
+        f"! video/x-raw,format=BGR "
         f"! appsink name=s emit-signals=true sync=false "
         f"  max-buffers=1 drop=true"
     )
