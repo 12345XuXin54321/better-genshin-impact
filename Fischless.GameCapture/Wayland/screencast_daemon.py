@@ -49,7 +49,6 @@ pipeline = None
 pending = {}
 session = None # ScreenCast 会话对象
 
-EXIT_FILE.unlink(missing_ok=True)
 PID_FILE.write_text(str(os.getpid()))
 
 def on_response(response, results, path=None):
