@@ -9,6 +9,7 @@ using BetterGenshinImpact.Helpers;
 using BetterGenshinImpact.Helpers.Extensions;
 using BetterGenshinImpact.Helpers.Ui;
 using BetterGenshinImpact.Model;
+using BetterGenshinImpact.Platform.Wine;
 using BetterGenshinImpact.Service;
 using BetterGenshinImpact.Service.ChildSession;
 using BetterGenshinImpact.Service.Instance;
@@ -120,6 +121,12 @@ public partial class HomePageViewModel : ViewModel, IDisposable
             _inferenceDeviceTypes = _inferenceDeviceTypes
                 .Where(x => x != InferenceDeviceType.GpuDirectMl)
                 .ToArray();
+        }
+
+        // Wayland 是 Linux 下的显示协议，通过 Wine 运行本程序时才支持该捕获模式
+        if (!WinePlatformAddon.IsRunningOnWine)
+        {
+            _modeNames = _modeNames.Where(x => x.EnumName != CaptureModes.Wayland.ToString()).ToList();
         }
 
         WeakReferenceMessenger.Default.Register<PropertyChangedMessage<object>>(this, (sender, msg) =>

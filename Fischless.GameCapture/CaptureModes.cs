@@ -20,6 +20,10 @@ public enum CaptureModes
     [DefaultValue(3)]
     WindowsGraphicsCaptureHdr = 3,
 
+    [Description("Wine (Wayland)")]
+    [DefaultValue(4)]
+    Wayland = 4,
+
     [Description("WindowsGraphicsCapture V2")]
     [DefaultValue(5)]
     WindowsGraphicsCaptureV2 = 5,
